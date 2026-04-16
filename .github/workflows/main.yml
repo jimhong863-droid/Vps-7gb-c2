@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       duration:
-        description: 'Durasi VPS (jam) - maksimal 6 jam'
-        required: true
+        description: 'Durasi VPS (jam) - maksimal 6 jam (informasi saja)'
+        required: false
         default: '6'
         type: choice
         options:
@@ -19,10 +19,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ fromJSON(inputs.duration) * 60 }}
+    timeout-minutes: 360   # Tetap 6 jam (maksimal GitHub Actions)
 
     steps:
-      # ========== 1. CEK SISTEM & INFO ==========
       - name: 🖥️ Informasi sistem
         run: |
           echo "╔══════════════════════════════════════════════════════════════╗"
@@ -35,7 +34,6 @@ jobs:
           echo "Kernel: $(uname -r)"
           echo "Arch: $(uname -m)"
 
-      # ========== 2. UPDATE SYSTEM & INSTALL ALL TOOLS ==========
       - name: 📦 Update dan install semua tools (no delay nanti)
         run: |
           sudo apt update
@@ -61,7 +59,6 @@ jobs:
             ufw fail2ban certbot python3-certbot-nginx \
             tmate
 
-      # ========== 3. INSTALL TOOLS TAMBAHAN (PIP & NPM & GO) ==========
       - name: 🧰 Install packages via pip, npm, go
         run: |
           pip3 install --upgrade pip
@@ -69,7 +66,6 @@ jobs:
           npm install -g pm2 nodemon forever http-server
           go install github.com/xxx/xxx@latest 2>/dev/null || true
 
-      # ========== 4. SET ROOT PASSWORD (dari secret atau default) ==========
       - name: 🔐 Konfigurasi password root
         run: |
           if [ -n "${{ secrets.ROOT_PASSWORD }}" ]; then
@@ -80,7 +76,6 @@ jobs:
             echo "⚠️ Secret ROOT_PASSWORD tidak ditemukan. Menggunakan password default: PatrickGanteng123"
           fi
 
-      # ========== 5. BUAT USER BIASA (opsional) ==========
       - name: 👤 Buat user 'patrick' dengan sudo akses
         run: |
           sudo useradd -m -s /bin/bash patrick 2>/dev/null || true
@@ -89,7 +84,6 @@ jobs:
           echo "patrick ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/patrick
           echo "✅ User 'patrick' siap (password: Patrick123)"
 
-      # ========== 6. BUAT FILE INFORMASI DI HOME ==========
       - name: 📄 Buat file info di home
         run: |
           cat > ~/info_vps.txt <<EOF
@@ -102,24 +96,21 @@ jobs:
           EOF
           echo "✅ File info_vps.txt telah dibuat di ~/"
 
-      # ========== 7. DOWNLOAD INSTALLER PTERODACTYL ==========
       - name: 🦖 Siapkan installer Pterodactyl
         run: |
           curl -s https://pterodactyl-installer.se > ~/install-panel.sh
           chmod +x ~/install-panel.sh
           echo "✅ Installer Pterodactyl siap: ~/install-panel.sh"
 
-      # ========== 8. BACKUP ARTIFACT (DATA PENTING) ==========
       - name: 💾 Upload backup ke artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vps-backup-$(date +%Y%m%d-%H%M%S)
+          name: vps-backup-${{ github.run_id }}
           path: |
             ~/info_vps.txt
             ~/install-panel.sh
           retention-days: 90
 
-      # ========== 9. START TMATE (SSH ACCESS) ==========
       - name: 🔑 Start tmate session
         run: |
           echo ""
