@@ -8,13 +8,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: Install all tools
-        run: |
-          sudo apt update
-          sudo apt install -y curl wget git vim nano htop neofetch build-essential net-tools dnsutils iputils-ping traceroute screen tmux zip unzip tar gzip jq bc figlet toilet lolcat sshpass rsync psmisc tree python3 python3-pip python3-venv nodejs npm yarn docker.io docker-compose nginx apache2 php php-cli php-fpm php-mysql mysql-server postgresql redis-tools sqlite3 mongodb-clients openjdk-17-jdk golang-go rustc cargo cmake make gdb gcc g++ libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpng-dev lsof strace ltrace sysstat ufw fail2ban certbot python3-certbot-nginx tmate
+      - name: Update system
+        run: sudo apt update && sudo apt upgrade -y
+
+      - name: Install essential tools
+        run: sudo apt install -y curl wget git vim nano htop neofetch build-essential net-tools dnsutils iputils-ping traceroute screen tmux zip unzip tar gzip jq bc figlet toilet lolcat sshpass rsync psmisc tree python3 python3-pip python3-venv nodejs npm yarn
+
+      - name: Install web servers & databases
+        run: sudo apt install -y nginx apache2 php php-cli php-fpm php-mysql mysql-server postgresql redis-tools sqlite3
+
+      - name: Install development tools
+        run: sudo apt install -y openjdk-17-jdk golang-go rustc cargo cmake make gdb gcc g++ libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpng-dev lsof strace ltrace sysstat ufw fail2ban certbot python3-certbot-nginx
+
+      - name: Install Docker
+        run: sudo apt install -y docker.io docker-compose
+
+      - name: Install tmate
+        run: sudo apt install -y tmate
 
       - name: Install Python packages
-        run: pip3 install requests beautifulsoup4 selenium scrapy pandas numpy flask django fastapi uvicorn
+        run: pip3 install --upgrade pip && pip3 install requests beautifulsoup4 selenium scrapy pandas numpy flask django fastapi uvicorn
 
       - name: Install Node.js global packages
         run: npm install -g pm2 nodemon forever http-server
@@ -34,7 +47,7 @@ jobs:
           sudo usermod -aG sudo patrick
           echo "patrick ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/patrick
 
-      - name: Create info file
+      - name: Create info file & download panel installer
         run: |
           mkdir -p ~/backup
           echo "VPS aktif: $(date)" > ~/info.txt
