@@ -1,122 +1,55 @@
-name: 🔥 ULTIMATE VPS - NO DELAY, ALL COMMANDS READY 🔥
+name: Ultimate VPS
 
 on:
   workflow_dispatch:
-    inputs:
-      duration:
-        description: 'Durasi VPS (jam) - maksimal 6 jam (informasi saja)'
-        required: false
-        default: '6'
-        type: choice
-        options:
-          - '1'
-          - '2'
-          - '3'
-          - '4'
-          - '5'
-          - '6'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # Tetap 6 jam (maksimal GitHub Actions)
-
+    timeout-minutes: 360
     steps:
-      - name: 🖥️ Informasi sistem
-        run: |
-          echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║          🔥 VPS ULTIMATE - SIAP PAKAI 🔥                     ║"
-          echo "╚══════════════════════════════════════════════════════════════╝"
-          echo "OS: $(lsb_release -ds)"
-          echo "CPU: $(nproc) core"
-          echo "RAM: $(free -h | awk '/^Mem:/ {print $2}')"
-          echo "Storage: $(df -h / | awk 'NR==2 {print $2}')"
-          echo "Kernel: $(uname -r)"
-          echo "Arch: $(uname -m)"
-
-      - name: 📦 Update dan install semua tools (no delay nanti)
+      - name: Install all tools
         run: |
           sudo apt update
-          sudo apt upgrade -y
-          sudo apt install -y \
-            curl wget git vim nano htop neofetch \
-            build-essential software-properties-common \
-            net-tools dnsutils iputils-ping traceroute \
-            screen tmux zip unzip tar gzip \
-            jq bc figlet toilet lolcat \
-            sshpass rsync psmisc tree \
-            python3 python3-pip python3-venv \
-            nodejs npm yarn \
-            docker.io docker-compose \
-            nginx apache2 php php-cli php-fpm php-mysql \
-            mysql-server postgresql redis-tools \
-            sqlite3 mongodb-clients \
-            openjdk-17-jdk golang-go rustc cargo \
-            cmake make gdb gcc g++ \
-            libssl-dev libffi-dev libxml2-dev libxslt1-dev \
-            zlib1g-dev libjpeg-dev libpng-dev \
-            lsof strace ltrace sysstat \
-            ufw fail2ban certbot python3-certbot-nginx \
-            tmate
+          sudo apt install -y curl wget git vim nano htop neofetch build-essential net-tools dnsutils iputils-ping traceroute screen tmux zip unzip tar gzip jq bc figlet toilet lolcat sshpass rsync psmisc tree python3 python3-pip python3-venv nodejs npm yarn docker.io docker-compose nginx apache2 php php-cli php-fpm php-mysql mysql-server postgresql redis-tools sqlite3 mongodb-clients openjdk-17-jdk golang-go rustc cargo cmake make gdb gcc g++ libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev libjpeg-dev libpng-dev lsof strace ltrace sysstat ufw fail2ban certbot python3-certbot-nginx tmate
 
-      - name: 🧰 Install packages via pip, npm, go
-        run: |
-          pip3 install --upgrade pip
-          pip3 install requests beautifulsoup4 selenium scrapy pandas numpy flask django fastapi uvicorn
-          npm install -g pm2 nodemon forever http-server
-          go install github.com/xxx/xxx@latest 2>/dev/null || true
+      - name: Install Python packages
+        run: pip3 install requests beautifulsoup4 selenium scrapy pandas numpy flask django fastapi uvicorn
 
-      - name: 🔐 Konfigurasi password root
+      - name: Install Node.js global packages
+        run: npm install -g pm2 nodemon forever http-server
+
+      - name: Set root password
         run: |
           if [ -n "${{ secrets.ROOT_PASSWORD }}" ]; then
             echo "root:${{ secrets.ROOT_PASSWORD }}" | sudo chpasswd
-            echo "✅ Password root sudah diatur dari secret ROOT_PASSWORD"
           else
             echo "root:PatrickGanteng123" | sudo chpasswd
-            echo "⚠️ Secret ROOT_PASSWORD tidak ditemukan. Menggunakan password default: PatrickGanteng123"
           fi
 
-      - name: 👤 Buat user 'patrick' dengan sudo akses
+      - name: Create user patrick
         run: |
           sudo useradd -m -s /bin/bash patrick 2>/dev/null || true
           echo "patrick:Patrick123" | sudo chpasswd
           sudo usermod -aG sudo patrick
           echo "patrick ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/patrick
-          echo "✅ User 'patrick' siap (password: Patrick123)"
 
-      - name: 📄 Buat file info di home
+      - name: Create info file
         run: |
-          cat > ~/info_vps.txt <<EOF
-          🔥 VPS ULTIMATE READY 🔥
-          Waktu aktif: $(date)
-          IP Public: $(curl -s ifconfig.me)
-          User root: password dari secret atau default
-          User patrick: Patrick123
-          Tools terinstall: lengkap (python, node, docker, nginx, mysql, dll)
-          EOF
-          echo "✅ File info_vps.txt telah dibuat di ~/"
-
-      - name: 🦖 Siapkan installer Pterodactyl
-        run: |
+          mkdir -p ~/backup
+          echo "VPS aktif: $(date)" > ~/info.txt
+          echo "IP: $(curl -s ifconfig.me)" >> ~/info.txt
           curl -s https://pterodactyl-installer.se > ~/install-panel.sh
           chmod +x ~/install-panel.sh
-          echo "✅ Installer Pterodactyl siap: ~/install-panel.sh"
 
-      - name: 💾 Upload backup ke artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vps-backup-${{ github.run_id }}
+          name: backup-vps
           path: |
-            ~/info_vps.txt
+            ~/info.txt
             ~/install-panel.sh
           retention-days: 90
 
-      - name: 🔑 Start tmate session
-        run: |
-          echo ""
-          echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║   🔥 SSH CONNECTION INFO 🔥                                  ║"
-          echo "║   Copy link di bawah ini dan paste di Termux                 ║"
-          echo "╚══════════════════════════════════════════════════════════════╝"
-          echo ""
-          tmate -F
+      - name: Start tmate
+        run: tmate -F
